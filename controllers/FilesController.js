@@ -1,30 +1,34 @@
-import { ObjectId } from 'mongodb';
+import { v4 as uuidv4 } from 'uuid';
+import { promises as fs } from 'fs';
+import mime from 'mime-types';
 import dbClient from '../utils/db';
 import redisClient from '../utils/redis';
 
+const FOLDER_PATH = process.env.FOLDER_PATH || '/tmp/files_manager';
+
 class FilesController {
-  // ... postUpload method already here ...
-
-  static async getShow(req, res) {
+  static async putPublish(req, res) {
     const token = req.header('X-Token');
-    if (!token) return res.status(401).json({ error: 'Unauthorized' });
-
     const userId = await redisClient.get(`auth_${token}`);
+
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
-    const fileId = req.params.id;
-    if (!ObjectId.isValid(fileId)) return res.status(404).json({ error: 'Not found' });
-
-    const file = await dbClient.db.collection('files').findOne({
-      _id: ObjectId(fileId),
-      userId: ObjectId(userId),
+    const file = await dbClient.filesCollection.findOne({
+      _id: new dbClient.ObjectId(req.params.id),
+      userId: new dbClient.ObjectId(userId),
     });
 
     if (!file) return res.status(404).json({ error: 'Not found' });
 
-    return res.json({
-      id: file._id,
-      userId: file.userId,
+    await dbClient.filesCollection.updateOne(
+      { _id: file._id },
+      { $set: { isPublic: true } }
+    );
+
+    file.isPublic = true;
+    return res.status(200).json({
+      id: file._id.toString(),
+      userId: file.userId.toString(),
       name: file.name,
       type: file.type,
       isPublic: file.isPublic,
@@ -32,43 +36,36 @@ class FilesController {
     });
   }
 
-  static async getIndex(req, res) {
+  static async putUnpublish(req, res) {
     const token = req.header('X-Token');
-    if (!token) return res.status(401).json({ error: 'Unauthorized' });
-
     const userId = await redisClient.get(`auth_${token}`);
+
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
-    const parentId = req.query.parentId || '0';
-    const page = Number.parseInt(req.query.page, 10) || 0;
-    const limit = 20;
-    const skip = page * limit;
+    const file = await dbClient.filesCollection.findOne({
+      _id: new dbClient.ObjectId(req.params.id),
+      userId: new dbClient.ObjectId(userId),
+    });
 
-    const matchQuery = { userId: ObjectId(userId), parentId };
-    if (parentId !== '0' && ObjectId.isValid(parentId)) {
-      matchQuery.parentId = ObjectId(parentId);
-    }
+    if (!file) return res.status(404).json({ error: 'Not found' });
 
-    const files = await dbClient.db.collection('files')
-      .aggregate([
-        { $match: matchQuery },
-        { $skip: skip },
-        { $limit: limit },
-        {
-          $project: {
-            id: '$_id',
-            userId: '$userId',
-            name: '$name',
-            type: '$type',
-            isPublic: '$isPublic',
-            parentId: '$parentId',
-          },
-        },
-      ])
-      .toArray();
+    await dbClient.filesCollection.updateOne(
+      { _id: file._id },
+      { $set: { isPublic: false } }
+    );
 
-    return res.json(files);
+    file.isPublic = false;
+    return res.status(200).json({
+      id: file._id.toString(),
+      userId: file.userId.toString(),
+      name: file.name,
+      type: file.type,
+      isPublic: file.isPublic,
+      parentId: file.parentId,
+    });
   }
+
+  // Other methods like postUpload, getShow, getIndex...
 }
 
 export default FilesController;

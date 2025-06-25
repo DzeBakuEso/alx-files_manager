@@ -1,6 +1,5 @@
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 
-// Get environment variables or use defaults
 const host = process.env.DB_HOST || 'localhost';
 const port = process.env.DB_PORT || 27017;
 const dbName = process.env.DB_DATABASE || 'files_manager';
@@ -18,21 +17,28 @@ class DBClient {
         this.db = this.client.db(dbName);
         this.usersCollection = this.db.collection('users');
         this.filesCollection = this.db.collection('files');
-        console.log('MongoDB connected successfully');
       })
       .catch((err) => {
         console.error('MongoDB connection error:', err.message);
       });
   }
 
-  /**
-   * Checks if MongoDB is connected
-   * @returns {boolean}
-   */
   isAlive() {
     return !!this.db;
   }
 
-  /**
-   * Counts documents in users collection
-   * @returns {Prom*
+  async nbUsers() {
+    return this.usersCollection.countDocuments();
+  }
+
+  async nbFiles() {
+    return this.filesCollection.countDocuments();
+  }
+
+  get ObjectId() {
+    return ObjectId;
+  }
+}
+
+const dbClient = new DBClient();
+export default dbClient;
