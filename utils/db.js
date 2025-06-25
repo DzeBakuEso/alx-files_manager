@@ -9,9 +9,15 @@ class DBClient {
   constructor() {
     const uri = `mongodb://${host}:${port}`;
     this.client = new MongoClient(uri, { useUnifiedTopology: true });
+    this.db = null;
+    this.usersCollection = null;
+    this.filesCollection = null;
+
     this.client.connect()
       .then(() => {
         this.db = this.client.db(dbName);
+        this.usersCollection = this.db.collection('users');
+        this.filesCollection = this.db.collection('files');
       })
       .catch((err) => {
         console.error('MongoDB connection error:', err.message);
@@ -31,7 +37,7 @@ class DBClient {
    * @returns {Promise<number>}
    */
   async nbUsers() {
-    return this.db.collection('users').countDocuments();
+    return this.usersCollection.countDocuments();
   }
 
   /**
@@ -39,7 +45,7 @@ class DBClient {
    * @returns {Promise<number>}
    */
   async nbFiles() {
-    return this.db.collection('files').countDocuments();
+    return this.filesCollection.countDocuments();
   }
 }
 
