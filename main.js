@@ -1,12 +1,28 @@
-import redisClient from './utils/redis';
+import dbClient from './utils/db';
+
+const waitConnection = () => {
+  return new Promise((resolve, reject) => {
+    let i = 0;
+    const repeatFct = async () => {
+      await setTimeout(() => {
+        i += 1;
+        if (i >= 10) {
+          reject();
+        } else if (!dbClient.isAlive()) {
+          repeatFct();
+        } else {
+          resolve();
+        }
+      }, 1000);
+    };
+    repeatFct();
+  });
+};
 
 (async () => {
-  console.log(redisClient.isAlive());             // true
-  console.log(await redisClient.get('myKey'));    // null
-  await redisClient.set('myKey', 12, 5);
-  console.log(await redisClient.get('myKey'));    // 12
-
-  setTimeout(async () => {
-    console.log(await redisClient.get('myKey'));  // null after 10 seconds
-  }, 1000 * 10);
+  console.log(dbClient.isAlive());          // false initially
+  await waitConnection();                  // waits until connected or times out
+  console.log(dbClient.isAlive());          // true
+  console.log(await dbClient.nbUsers());    // e.g., 4
+  console.log(await dbClient.nbFiles());    // e.g., 30
 })();
