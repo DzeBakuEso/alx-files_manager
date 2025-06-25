@@ -1,29 +1,22 @@
-import sha1 from 'sha1';
-import { ObjectId } from 'mongodb';
+// controllers/UsersController.js (add to existing file)
 import dbClient from '../utils/db';
+import redisClient from '../utils/redis';
 
 class UsersController {
-  /**
-   * POST /users - Register a new user
-   */
   static async postNew(req, res) {
-    const { email, password } = req.body;
+    // Already implemented in Task 3
+  }
 
-    if (!email) return res.status(400).json({ error: 'Missing email' });
-    if (!password) return res.status(400).json({ error: 'Missing password' });
+  static async getMe(req, res) {
+    const token = req.headers['x-token'];
+    const userId = await redisClient.get(`auth_${token}`);
 
-    try {
-      const userExists = await dbClient.usersCollection.findOne({ email });
-      if (userExists) return res.status(400).json({ error: 'Already exist' });
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
-      const hashedPassword = sha1(password);
-      const newUser = { email, password: hashedPassword };
+    const user = await dbClient.usersCollection.findOne({ _id: dbClient.ObjectId(userId) });
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-      const result = await dbClient.usersCollection.insertOne(newUser);
-      return res.status(201).json({ id: result.insertedId, email });
-    } catch (err) {
-      return res.status(500).json({ error: 'Server error' });
-    }
+    return res.status(200).json({ id: user._id.toString(), email: user.email });
   }
 }
 
