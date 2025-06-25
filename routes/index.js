@@ -14,7 +14,10 @@ router.get('/connect', AuthController.getConnect);
 router.get('/disconnect', AuthController.getDisconnect);
 router.get('/users/me', UsersController.getMe);
 
-// ✅ Task 5: File upload route
 router.post('/files', FilesController.postUpload);
+
+// ✅ Task 6: Get file and list files
+router.get('/files/:id', FilesController.getShow);
+router.get('/files', FilesController.getIndex);
 
 export default router;

@@ -18,6 +18,7 @@ class DBClient {
         this.db = this.client.db(dbName);
         this.usersCollection = this.db.collection('users');
         this.filesCollection = this.db.collection('files');
+        console.log('MongoDB connected successfully');
       })
       .catch((err) => {
         console.error('MongoDB connection error:', err.message);
@@ -34,21 +35,4 @@ class DBClient {
 
   /**
    * Counts documents in users collection
-   * @returns {Promise<number>}
-   */
-  async nbUsers() {
-    return this.usersCollection.countDocuments();
-  }
-
-  /**
-   * Counts documents in files collection
-   * @returns {Promise<number>}
-   */
-  async nbFiles() {
-    return this.filesCollection.countDocuments();
-  }
-}
-
-// Export instance
-const dbClient = new DBClient();
-export default dbClient;
+   * @returns {Prom*
